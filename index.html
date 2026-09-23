@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>歴史カード</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: linear-gradient(180deg, #eef2ff 0%, #f8fafc 48%, #e2e8f0 100%);
+      color: #0f172a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 16px;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 680px;
+      background: #ffffff;
+      border-radius: 28px;
+      box-shadow: 0 32px 62px rgba(15, 23, 42, 0.12);
+      padding: 28px;
+      border: 1px solid #e2e8f0;
+    }
+
+    .app-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .header-left {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .filter-tabs,
+    .deck-switch {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .filter-tab,
+    .deck-tab {
+      border: 1px solid #cbd5e1;
+      background: #f8fafc;
+      color: #334155;
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .filter-tab.active,
+    .deck-tab.active {
+      background: #2563eb;
+      color: #ffffff;
+      border-color: #2563eb;
+    }
+
+    .progress-memo {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .progress-item {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 7px 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      background: #f8fafc;
+      color: #334155;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .progress-input {
+      width: 64px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      background: #ffffff;
+      color: #0f172a;
+      padding: 6px 8px;
+      font-size: 14px;
+      font-weight: 700;
+      text-align: center;
+      outline: none;
+    }
+
+    .progress-input:focus {
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.10);
+    }
+
+    .progress-total {
+      color: #64748b;
+      font-weight: 600;
+    }
+
+    .app-title {
+      font-size: 26px;
+      font-weight: 800;
+      line-height: 1.08;
+      color: #111827;
+    }
+
+    .subtitle {
+      margin-top: 8px;
+      font-size: 14px;
+      color: #475569;
+      max-width: 420px;
+    }
+
+    .status {
+      font-size: 14px;
+      color: #475569;
+      background: #f8fafc;
+      padding: 10px 14px;
+      border-radius: 14px;
+      border: 1px solid #dbeafe;
+      white-space: nowrap;
+    }
+
+    .main-card {
+      perspective: 1400px;
+    }
+
+    .flashcard {
+      width: 100%;
+      min-height: 320px;
+      border-radius: 28px;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.65s ease;
+      cursor: pointer;
+      outline: none;
+      box-shadow: 0 24px 48px rgba(15, 23, 42, 0.12);
+    }
+
+    .flashcard.flipped {
+      transform: rotateY(180deg);
+    }
+
+    .card-face {
+      position: absolute;
+      inset: 0;
+      border-radius: 28px;
+      backface-visibility: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 32px;
+      text-align: center;
+      box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.04), 0 16px 28px rgba(15, 23, 42, 0.08);
+    }
+
+    .card-front {
+      background: #ffffff;
+    }
+
+    .card-back {
+      background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%);
+      color: #ffffff;
+      transform: rotateY(180deg);
+    }
+
+    .card-label {
+      font-size: 12px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      font-weight: 700;
+      margin-bottom: 18px;
+      opacity: 0.85;
+    }
+
+    .card-text {
+      font-size: 28px;
+      line-height: 1.3;
+      font-weight: 700;
+      max-width: 88%;
+      color: inherit;
+    }
+
+    .card-hint {
+      margin-top: 24px;
+      font-size: 13px;
+      color: rgba(71, 85, 105, 0.8);
+      max-width: 82%;
+    }
+
+    .controls {
+      margin-top: 24px;
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .btn-primary {
+      appearance: none;
+      border: none;
+      border-radius: 999px;
+      padding: 14px 24px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      background: #2563eb;
+      color: #ffffff;
+      box-shadow: 0 16px 28px rgba(37, 99, 235, 0.18);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-1px);
+    }
+
+    .btn-primary:active {
+      transform: translateY(1px);
+      box-shadow: none;
+    }
+
+    .like-toggle {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      z-index: 3;
+      border: 2px solid #fda4af;
+      background: rgba(255, 255, 255, 0.98);
+      color: #ef4444;
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      cursor: pointer;
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+      pointer-events: auto;
+    }
+
+    .like-toggle:hover {
+      transform: scale(1.04);
+    }
+
+    .like-toggle.liked {
+      background: #fee2e2;
+      border-color: #ef4444;
+    }
+
+    @media (max-width: 660px) {
+      .app {
+        padding: 22px;
+      }
+
+      .app-title {
+        font-size: 22px;
+      }
+
+      .flashcard {
+        min-height: 300px;
+      }
+
+      .card-text {
+        font-size: 24px;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .app {
+        padding: 18px;
+      }
+
+      .card-text {
+        font-size: 20px;
+      }
+
+      .controls {
+        margin-top: 18px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="app-header">
+      <div class="header-left">
+        <div class="deck-switch" role="tablist" aria-label="デッキ切替">
+          <button class="deck-tab active" data-deck="history" id="deck-history">歴史</button>
+          <button class="deck-tab" data-deck="english" id="deck-english">英語</button>
+        </div>
+        <div class="filter-tabs" role="tablist" aria-label="カードの表示切替">
+          <button class="filter-tab active" data-mode="all" id="filter-all">全部</button>
+          <button class="filter-tab" data-mode="liked" id="filter-liked">いいねしたやつ</button>
+        </div>
+        <div class="progress-memo" aria-label="進捗メモ">
+          <label class="progress-item" for="progress-history">
+            <span>歴史</span>
+            <input class="progress-input" id="progress-history" type="number" min="0" max="33" inputmode="numeric" placeholder="0" aria-label="歴史の進捗番号" />
+            <span class="progress-total">/ 33</span>
+          </label>
+          <label class="progress-item" for="progress-english">
+            <span>英語</span>
+            <input class="progress-input" id="progress-english" type="number" min="0" max="144" inputmode="numeric" placeholder="0" aria-label="英語の進捗番号" />
+            <span class="progress-total">/ 144</span>
+          </label>
+        </div>
+        <div>
+          <div class="app-title" id="app-title">歴史カード</div>
+          <div class="subtitle" id="subtitle">カードを押して裏返し、次のカードへ進みます</div>
+        </div>
+      </div>
+      <div class="status">
+        <span id="stat-count">1 / 33</span>
+      </div>
+    </header>
+
+    <main class="main-card">
+      <div class="flashcard" id="flashcard" tabindex="0" role="button" aria-label="カードをめくる">
+        <button class="like-toggle" id="like-toggle" type="button" aria-label="いいね" aria-pressed="false">♡</button>
+        <div class="card-face card-front">
+          <div class="card-label">Question</div>
+          <div class="card-text" id="question-text"></div>
+          <div class="card-hint">カードを押すと答えが見えます</div>
+        </div>
+        <div class="card-face card-back">
+          <div class="card-label">Answer</div>
+          <div class="card-text" id="answer-text"></div>
+          <div class="card-hint">もう一度押すと問題に戻ります</div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <button class="btn-primary" id="prev-btn">前のカード</button>
+        <button class="btn-primary" id="next-btn">次のカード</button>
+      </div>
+    </main>
+
+    <script>
+      const decks = {
+        history: [
+          {
+            q: "ギロチンが導入された本来の目的・背景は？",
+            a: "身分に関わらず「等しい平穏な死」を与えるという、人道主義と刑罰の等質化のため。",
+          },
+          {
+            q: "近代的な百貨店の特徴は？",
+            a: "定価販売・広い売り場・ショーウィンドウ・広告の活用。",
+          },
+          {
+            q: "学校・工場・軍隊・病院に共通する身体管理のしくみは？",
+            a: "時間を区切り、空間に配置し、身体を測り、記録し、標準に近づけること。",
+          },
+          {
+            q: "ダーウィン進化論の「誤用」とは？",
+            a: "生物の変化を、人間の価値や民族の優劣の序列に置き換えたこと。",
+          },
+          {
+            q: "ブラックプールが「レジャーの民主化」を象徴する理由は？",
+            a: "労働者が鉄道を利用し、休日に訪れる大衆向けリゾートとして発展したから。",
+          },
+          {
+            q: "産業革命によって起こった代表的な変化は？",
+            a: "機械化が進み、大量生産が可能になった。",
+          },
+          {
+            q: "19世紀後半アメリカで巨大な富を生んだ産業は？",
+            a: "鉄道・石油・鉄鋼。",
+          },
+          {
+            q: "王立協会（Royal Society）の特徴は？",
+            a: "観察・実験・再現性を重視し、知識を公開した。",
+          },
+          {
+            q: "フィランソロピーとは？",
+            a: "個人や企業が、教育・研究・医療・文化などの社会課題に資金や組織を通じて関わること。",
+          },
+          {
+            q: "「科学が信頼される」ために重要だった点は？",
+            a: "科学が信頼されるには、制度や社会的な仕組みも重要だった。",
+          },
+          {
+            q: "19世紀以降、余暇が多くの人に広がった条件は？",
+            a: "労働時間の短縮や休日の定着、鉄道網の発達。",
+          },
+          {
+            q: "民族展示や人類館事件に共通する問題は？",
+            a: "人々が「見る側」と「見られる側」に分けられ、一方的に分類されたこと。",
+          },
+          {
+            q: "ガリレオの観測が中世の宇宙観を揺らした理由は？",
+            a: "地球以外にも「中心」が存在する可能性を示したから。",
+          },
+          {
+            q: "ラッダイト運動とは？",
+            a: "機械化による失業を恐れた労働者の運動。",
+          },
+          {
+            q: "カーネギーやロックフェラーが「英雄」とも「泥棒男爵」とも呼ばれた理由は？",
+            a: "産業を発展させた一方で、独占や格差を広げたとも批判されたから。",
+          },
+          {
+            q: "ウィリアム・モリスが批判したものは？",
+            a: "産業革命による機械化と大量生産。",
+          },
+          {
+            q: "科学の発展に影響する社会的要因を表す考え方は？",
+            a: "科学の発展には、社会や宗教との関係も影響する。",
+          },
+          {
+            q: "19世紀の万国博覧会の役割は？",
+            a: "各国の技術や産業を紹介し、国家の力を示す場。",
+          },
+          {
+            q: "アーツ・アンド・クラフツ運動とは？",
+            a: "手仕事や職人技の価値を見直した芸術運動。",
+          },
+          {
+            q: "高島屋が1900年パリ万博への出展などで進めたことは？",
+            a: "日本の染織品や工芸品を「美術」として見せ、海外での信頼やブランド価値を高めること。",
+          },
+          {
+            q: "19世紀ロンドンで下水道整備が進むきっかけとなった問題は？",
+            a: "テムズ川の汚染と悪臭の深刻化。",
+          },
+          {
+            q: "モリス『ユートピアだより』で重視された考え方は？",
+            a: "労働の喜びと美しい暮らし。",
+          },
+          {
+            q: "活版印刷がヨーロッパ社会に与えた影響は？",
+            a: "本の流通が広がり、宗教・科学・政治思想の伝達を後押しした。",
+          },
+          {
+            q: "フーコーの言う「規律訓練型社会」とは？",
+            a: "学校・軍隊・病院などの制度を通じて、人びとが自分から規則に合わせて行動するようになる社会。",
+          },
+          {
+            q: "古代の都市設計や建築が持っていた意味は？",
+            a: "神や宗教の信仰／社会の秩序や身分制度／自然（太陽・川など）との関係を形にしている。",
+          },
+          {
+            q: "スコラ学派とはどのような学問のあり方か？",
+            a: "神学と理性を結びつけ、論理的に世界を理解しようとした。",
+          },
+          {
+            q: "フランス革命期の「合理的な再設計」の例として不適切なものは？",
+            a: "キリスト教の教会権力を強めるため、神の意志に基づく新しいカレンダーの全国導入。",
+          },
+          {
+            q: "AI時代の「映像」や「音声」についてのポイントは？",
+            a: "「見えること」と「真実であること」は必ずしも同じではない。",
+          },
+          {
+            q: "「市場」についての正しい説明は？",
+            a: "市場は、制度・思想・人々の関係の中で形づくられてきた。",
+          },
+          {
+            q: "アダム・スミスの市場観で重要な点は？",
+            a: "市場には個人の利益追求だけでなく、共感や道徳感情も関係すると考えた。",
+          },
+          {
+            q: "フランス革命期にメートル法が制定された背景は？",
+            a: "領主ごとにバラバラだった単位を廃止し、地球の経線を基準に「普遍的な単位」として定めた。",
+          },
+          {
+            q: "中世ヨーロッパの「教会」と「国王・領主」の関係は？",
+            a: "教会は信仰や救済に関わる権威を持ち、国王や領主は土地・軍事・政治に関わる力を持っていた。",
+          },
+          {
+            q: "三越が1910年代以降に力を入れたことは？",
+            a: "都市的な暮らしや流行を提案すること。",
+          }
+        ],
+        english: [
+          { q: "conflict", a: "対立・衝突" },
+          { q: "definitely", a: "当然・絶対（に）" },
+          { q: "interact with ~", a: "～を関りあう" },
+          { q: "more than ever", a: "今までよりも" },
+          { q: "habitat", a: "生息地" },
+          { q: "region", a: "地域" },
+          { q: "disappear", a: "消える・消滅する" },
+          { q: "once", a: "一旦～したら" },
+          { q: "behavior", a: "行動・振る舞い" },
+          { q: "limit the access to ~", a: "～へのアクセスを制限する" },
+          { q: "keep ~ away from", a: "～を...から遠ざける" },
+          { q: "frighten ~away", a: "～を脅かして遠ざける" },
+          { q: "mistreat", a: "虐待する" },
+          { q: "avoid", a: "避ける" },
+          { q: "treat", a: "扱う／ご褒美" },
+          { q: "sniff", a: "においをかぐ" },
+          { q: "landmine", a: "地雷" },
+          { q: "valuable", a: "貴重な" },
+          { q: "domestic", a: "家庭の、人に慣れた、国内の" },
+          { q: "chemical", a: "化学物質" },
+          { q: "certain", a: "（特定できるが名前がわからない）ある、例の" },
+          { q: "disease", a: "病気" },
+          { q: "laboratory test", a: "臨床試験" },
+          { q: "appearance", a: "見た目" },
+          { q: "go rotten", a: "腐る" },
+          { q: "landfill", a: "埋め立て地、ゴミ廃棄場" },
+          { q: "statistic", a: "統計値" },
+          { q: "food waste", a: "食品廃棄物" },
+          { q: "nutritious", a: "栄養価が高い" },
+          { q: "produce", a: "農産物" },
+          { q: "think twice", a: "熟考する、よく考える" },
+          { q: "edible", a: "食べられる" },
+          { q: "have got", a: "【話し言葉】持っている(haveの代用)" },
+          { q: "leftover", a: "残り物、残飯" },
+          { q: "chances are S V ~", a: "おそらく～だろう" },
+          { q: "recess", a: "休み時間" },
+          { q: "be likely to do~", a: "～しそうな" },
+          { q: "up to ~", a: "～まで、～に至るまで" },
+          { q: "involve", a: "巻き込む" },
+          { q: "make a difference", a: "違いを生む、影響を与える" },
+          { q: "end up ~", a: "～に行き着く、最後には～になる" },
+          { q: "decompose", a: "～を分解する" },
+          { q: "microplastic", a: "マイクロプラスチック（5mm以下の微細なプラスチックごみの総称）" },
+          { q: "extremely", a: "とても、非常に" },
+          { q: "damaging", a: "有害な、ダメージを与える" },
+          { q: "common", a: "一般的な、よくある" },
+          { q: "ingredient", a: "材料、成分" },
+          { q: "break into ~", a: "～に分解する" },
+          { q: "fabric", a: "布、生地" },
+          { q: "come off", a: "（表面から）取れる、落ちる" },
+          { q: "challenge", a: "課題、難しい問題" },
+          { q: "reusable", a: "再利用できる" },
+          { q: "psychological", a: "心理的な" },
+          { q: "attractive", a: "魅力的な" },
+          { q: "affect", a: "影響する" },
+          { q: "care about", a: "～を気にかける、気にする" },
+          { q: "latest", a: "最新の、最近の" },
+          { q: "mimic", a: "まねる" },
+          { q: "prefer", a: "～をより好む" },
+          { q: "fit in with ~", a: "～に溶け込む、なじむ" },
+          { q: "take responsibility for ~", a: "～の責任をとる" },
+          { q: "do your part", a: "私たちの責任を果たす" },
+          { q: "synthetic", a: "合成の、人工的な" },
+          { q: "toxic chemical", a: "有毒化学物質" },
+          { q: "manufacture", a: "製造" },
+          { q: "appearance", a: "見た目、外見" },
+          { q: "reflect", a: "反映する、映し出す" },
+          { q: "eco-friendly", a: "環境にやさしい" },
+          { q: "treat", a: "扱う、もてなす" },
+          { q: "purchase", a: "購入する" },
+          { q: "consider", a: "よく考える、検討する" },
+          { q: "advocate", a: "支持者、提唱者" },
+          { q: "collapse", a: "崩壊する、倒れる" },
+          { q: "issue", a: "問題、課題" },
+          { q: "be concerned about", a: "～を心配している" },
+          { q: "recognize", a: "認識する、気づく" },
+          { q: "mash-up", a: "異なるものを組み合わせた作品" },
+          { q: "combine", a: "組み合わせる" },
+          { q: "include", a: "含む" },
+          { q: "electronic", a: "電子の" },
+          { q: "equipment", a: "機器、設備" },
+          { q: "make sure", a: "必ず～する、確認する" },
+          { q: "work on", a: "取り組む" },
+          { q: "traditional", a: "伝統的な" },
+          { q: "instrument", a: "楽器；器具" },
+          { q: "no matter what S V", a: "たとえ何が～しても" },
+          { q: "Some~ Others ...", a: "～な人もいれば、...な人もいる" },
+          { q: "provide", a: "提供する" },
+          { q: "feast", a: "ごちそう、祝宴" },
+          { q: "imitate", a: "まねる、模範とする" },
+          { q: "landscape", a: "景観・景色" },
+          { q: "leafy", a: "葉の多い、緑の多い" },
+          { q: "bunch", a: "房・束" },
+          { q: "out of ~", a: "～の中から、～から作り出して" },
+          { q: "portrait", a: "肖像画" },
+          { q: "after", a: "～にちなんで" },
+          { q: "pea pod", a: "豆のさや" },
+          { q: "eyelid", a: "まぶた" },
+          { q: "billion", a: "10億" },
+          { q: "mobile", a: "移動できる、携帯用の、携帯電話" },
+          { q: "device", a: "機器、装置" },
+          { q: "gadget", a: "道具、装置" },
+          { q: "incredible", a: "信じられない、すごい" },
+          { q: "search for ~", a: "～を探す" },
+          { q: "look up", a: "調べる" },
+          { q: "text", a: "テキストメッセージ、メッセージを送る" },
+          { q: "typical", a: "典型的な、普通の" },
+          { q: "spend time on ~", a: "～に時間を費やす" },
+          { q: "let's see", a: "どうなるか見てみよう、ええと" },
+          { q: "think outside the box", a: "既成概念にとらわれずに物事を考える" },
+          { q: "remarkable", a: "卓越した、目立った" },
+          { q: "take ~ for example", a: "～を例にとる" },
+          { q: "fourteen-year-old", a: "14歳の" },
+          { q: "suffer from ~", a: "～に苦しむ" },
+          { q: "award-winning", a: "賞をとった" },
+          { q: "allow O to do ~", a: "Oが～することを許可する、可能にする" },
+          { q: "treat", a: "ご褒美、おやつ" },
+          { q: "grateful", a: "感謝している" },
+          { q: "be tired of ~", a: "～に飽きる" },
+          { q: "come up with ~", a: "～を思いつく" },
+          { q: "civilization", a: "文明" },
+          { q: "archaeologist", a: "考古学者" },
+          { q: "trade", a: "貿易、（動詞）取引する" },
+          { q: "continue to do ~", a: "～し続ける" },
+          { q: "site", a: "場所、遺跡" },
+          { q: "track", a: "追跡する" },
+          { q: "diet", a: "食事、食生活" },
+          { q: "artifact", a: "遺物、工芸品" },
+          { q: "skeleton", a: "骨格（全体）" },
+          { q: "bury", a: "埋める、埋葬する" },
+          { q: "Türkiye", a: "トルコ" },
+          { q: "species", a: "種" },
+          { q: "chore", a: "（家庭内の）雑用、家事" },
+          { q: "complain", a: "不平を言う、苦情を言う" },
+          { q: "throughout", a: "～の至る所で；～の間ずっと" },
+          { q: "few", a: "ほとんどない、少ししかない" },
+          { q: "present-day", a: "現代の、現在の" },
+          { q: "as well", a: "～もまた；さらに" },
+          { q: "rarely", a: "めったに～ない" },
+          { q: "no longer", a: "もはや～ない" },
+          { q: "instead", a: "その代わりに" },
+          { q: "as little as ~", a: "～ほど少ない、たった～" },
+          { q: "penny", a: "1ペニー硬貨；わずかなお金" },
+          { q: "peer", a: "同年代の人、仲間" },
+        ]
+      };
+
+      let currentIndex = 0;
+      let flipped = false;
+      let currentMode = "all";
+      let currentDeck = "history";
+      const likedIndexes = {
+        history: new Set(),
+        english: new Set()
+      };
+
+      const flashcard = document.getElementById("flashcard");
+      const questionText = document.getElementById("question-text");
+      const answerText = document.getElementById("answer-text");
+      const statCount = document.getElementById("stat-count");
+      const nextBtn = document.getElementById("next-btn");
+      const prevBtn = document.getElementById("prev-btn");
+      const likeToggle = document.getElementById("like-toggle");
+      const filterTabs = document.querySelectorAll(".filter-tab");
+      const deckTabs = document.querySelectorAll(".deck-tab");
+      const appTitle = document.getElementById("app-title");
+      const progressHistory = document.getElementById("progress-history");
+      const progressEnglish = document.getElementById("progress-english");
+
+      const progressInputs = {
+        history: progressHistory,
+        english: progressEnglish
+      };
+
+      function loadProgressMemo() {
+        Object.entries(progressInputs).forEach(([deck, input]) => {
+          const saved = localStorage.getItem(`flashcard-progress-${deck}`);
+          if (saved !== null) {
+            input.value = saved;
+          }
+        });
+      }
+
+      function saveProgressMemo(deck) {
+        const input = progressInputs[deck];
+        let value = input.value.trim();
+
+        if (value === "") {
+          localStorage.removeItem(`flashcard-progress-${deck}`);
+          return;
+        }
+
+        const max = decks[deck].length;
+        const numericValue = Math.max(0, Math.min(max, Number(value)));
+        input.value = Number.isFinite(numericValue) ? Math.trunc(numericValue) : "";
+
+        if (input.value === "") {
+          localStorage.removeItem(`flashcard-progress-${deck}`);
+        } else {
+          localStorage.setItem(`flashcard-progress-${deck}`, input.value);
+        }
+      }
+
+      function getCurrentDeckCards() {
+        return decks[currentDeck];
+      }
+
+      function getVisibleCards() {
+        const deckCards = getCurrentDeckCards();
+        if (currentMode === "liked") {
+          return deckCards.filter((card, index) => likedIndexes[currentDeck].has(index));
+        }
+        return deckCards;
+      }
+
+      function updateLikeButton() {
+        const visibleCards = getVisibleCards();
+        if (!visibleCards.length) {
+          likeToggle.textContent = "♡";
+          likeToggle.classList.remove("liked");
+          likeToggle.setAttribute("aria-pressed", "false");
+          return;
+        }
+
+        const card = visibleCards[currentIndex];
+        const originalIndex = getCurrentDeckCards().indexOf(card);
+        const isLiked = likedIndexes[currentDeck].has(originalIndex);
+        likeToggle.textContent = isLiked ? "♥" : "♡";
+        likeToggle.classList.toggle("liked", isLiked);
+        likeToggle.setAttribute("aria-pressed", isLiked ? "true" : "false");
+      }
+
+      function renderCard(index) {
+        const visibleCards = getVisibleCards();
+        flashcard.style.transition = "none";
+        setFlipped(false);
+        void flashcard.offsetWidth;
+
+        if (!visibleCards.length) {
+          questionText.textContent = "いいねしたカードはまだありません";
+          answerText.textContent = "";
+          statCount.textContent = "0 / 0";
+          currentIndex = 0;
+          updateLikeButton();
+          requestAnimationFrame(() => {
+            flashcard.style.transition = "";
+          });
+          return;
+        }
+
+        currentIndex = Math.min(index, visibleCards.length - 1);
+        const card = visibleCards[currentIndex];
+        questionText.textContent = card.q;
+        answerText.textContent = card.a;
+        statCount.textContent = `${currentIndex + 1} / ${visibleCards.length}`;
+        appTitle.textContent = currentDeck === "history" ? "歴史カード" : "英語カード";
+        updateLikeButton();
+
+        requestAnimationFrame(() => {
+          flashcard.style.transition = "";
+        });
+      }
+
+      function setFlipped(value) {
+        flipped = value;
+        flashcard.classList.toggle("flipped", flipped);
+      }
+
+      function nextCard() {
+        const visibleCards = getVisibleCards();
+        if (!visibleCards.length) {
+          return;
+        }
+        currentIndex = (currentIndex + 1) % visibleCards.length;
+        renderCard(currentIndex);
+      }
+
+      function prevCard() {
+        const visibleCards = getVisibleCards();
+        if (!visibleCards.length) {
+          return;
+        }
+        currentIndex = (currentIndex - 1 + visibleCards.length) % visibleCards.length;
+        renderCard(currentIndex);
+      }
+
+      function setFilter(mode) {
+        currentMode = mode;
+        filterTabs.forEach((tab) => {
+          tab.classList.toggle("active", tab.dataset.mode === mode);
+        });
+        renderCard(0);
+      }
+
+      function setDeck(deck) {
+        currentDeck = deck;
+        deckTabs.forEach((tab) => {
+          tab.classList.toggle("active", tab.dataset.deck === deck);
+        });
+        renderCard(0);
+      }
+
+      function toggleLikeCurrentCard() {
+        const visibleCards = getVisibleCards();
+        if (!visibleCards.length) {
+          return;
+        }
+
+        const card = visibleCards[currentIndex];
+        const originalIndex = getCurrentDeckCards().indexOf(card);
+        if (likedIndexes[currentDeck].has(originalIndex)) {
+          likedIndexes[currentDeck].delete(originalIndex);
+        } else {
+          likedIndexes[currentDeck].add(originalIndex);
+        }
+
+        if (currentMode === "liked") {
+          const remainingCards = getVisibleCards();
+          if (!remainingCards.length) {
+            renderCard(0);
+          } else {
+            currentIndex = Math.min(currentIndex, remainingCards.length - 1);
+            renderCard(currentIndex);
+          }
+        } else {
+          renderCard(currentIndex);
+        }
+      }
+
+      flashcard.addEventListener("click", (event) => {
+        if (event.target.id === "like-toggle") {
+          return;
+        }
+        setFlipped(!flipped);
+      });
+
+      flashcard.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          setFlipped(!flipped);
+        }
+      });
+
+      prevBtn.addEventListener("click", prevCard);
+      nextBtn.addEventListener("click", nextCard);
+      likeToggle.addEventListener("click", (e) => {
+        e.stopPropagation();
+        toggleLikeCurrentCard();
+      });
+
+      filterTabs.forEach((tab) => {
+        tab.addEventListener("click", () => setFilter(tab.dataset.mode));
+      });
+
+      deckTabs.forEach((tab) => {
+        tab.addEventListener("click", () => setDeck(tab.dataset.deck));
+      });
+
+      Object.entries(progressInputs).forEach(([deck, input]) => {
+        input.addEventListener("input", () => saveProgressMemo(deck));
+        input.addEventListener("change", () => saveProgressMemo(deck));
+      });
+
+      document.addEventListener("keydown", (e) => {
+        if (e.target.matches("input, textarea, select")) {
+          return;
+        }
+
+        if (e.key === "ArrowRight" || e.key === "Enter") {
+          nextCard();
+        } else if (e.key === "ArrowLeft") {
+          prevCard();
+        } else if (e.key === "Escape") {
+          setFlipped(false);
+        } else if (e.key === "1") {
+          setDeck("history");
+        } else if (e.key === "2") {
+          setDeck("english");
+        }
+      });
+
+      loadProgressMemo();
+      renderCard(currentIndex);
+    </script>
+  </div>
+</body>
+</html>
