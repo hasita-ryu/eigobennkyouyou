@@ -238,6 +238,18 @@
       box-shadow: none;
     }
 
+    .btn-speech.is-speaking {
+      background: #0f172a;
+      box-shadow: 0 16px 28px rgba(15, 23, 42, 0.18);
+    }
+
+    .btn-speech:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
+      transform: none;
+      box-shadow: none;
+    }
+
     .like-toggle {
       position: absolute;
       top: 16px;
@@ -352,6 +364,7 @@
       <div class="controls">
         <button class="btn-primary" id="prev-btn">前のカード</button>
         <button class="btn-primary" id="next-btn">次のカード</button>
+        <button class="btn-primary btn-speech" id="speech-toggle" type="button" aria-pressed="false">読み上げ開始</button>
       </div>
     </main>
 
@@ -654,12 +667,16 @@
       const statCount = document.getElementById("stat-count");
       const nextBtn = document.getElementById("next-btn");
       const prevBtn = document.getElementById("prev-btn");
+      const speechToggle = document.getElementById("speech-toggle");
       const likeToggle = document.getElementById("like-toggle");
       const filterTabs = document.querySelectorAll(".filter-tab");
       const deckTabs = document.querySelectorAll(".deck-tab");
       const appTitle = document.getElementById("app-title");
       const progressHistory = document.getElementById("progress-history");
       const progressEnglish = document.getElementById("progress-english");
+      const canSpeak = "speechSynthesis" in window && "SpeechSynthesisUtterance" in window;
+      let speechPlaying = false;
+      let speechRunId = 0;
 
       const progressInputs = {
         history: progressHistory,
@@ -760,7 +777,109 @@
         flashcard.classList.toggle("flipped", flipped);
       }
 
+      function updateSpeechButton() {
+        speechToggle.textContent = speechPlaying ? "読み上げ停止" : "読み上げ開始";
+        speechToggle.classList.toggle("is-speaking", speechPlaying);
+        speechToggle.setAttribute("aria-pressed", speechPlaying ? "true" : "false");
+      }
+
+      function delay(ms, runId) {
+        return new Promise((resolve) => {
+          window.setTimeout(() => {
+            resolve(speechPlaying && runId === speechRunId);
+          }, ms);
+        });
+      }
+
+      function speakText(text, lang, runId) {
+        return new Promise((resolve) => {
+          if (!speechPlaying || runId !== speechRunId || !text) {
+            resolve(false);
+            return;
+          }
+
+          const utterance = new SpeechSynthesisUtterance(text);
+          utterance.lang = lang;
+          utterance.rate = lang === "en-US" ? 0.82 : 0.92;
+          utterance.pitch = 1;
+          utterance.onend = () => resolve(speechPlaying && runId === speechRunId);
+          utterance.onerror = () => resolve(speechPlaying && runId === speechRunId);
+          window.speechSynthesis.speak(utterance);
+        });
+      }
+
+      async function playSpeechLoop(runId) {
+        while (speechPlaying && runId === speechRunId) {
+          const visibleCards = getVisibleCards();
+          if (!visibleCards.length) {
+            stopSpeech();
+            return;
+          }
+
+          currentIndex = currentIndex % visibleCards.length;
+          renderCard(currentIndex);
+          const card = visibleCards[currentIndex];
+
+          if (!(await speakText(card.q, "en-US", runId))) return;
+          if (!(await delay(450, runId))) return;
+          setFlipped(true);
+          if (!(await delay(250, runId))) return;
+          if (!(await speakText(card.a, "ja-JP", runId))) return;
+          if (!(await delay(850, runId))) return;
+
+          const latestCards = getVisibleCards();
+          if (!latestCards.length) {
+            stopSpeech();
+            return;
+          }
+          currentIndex = (currentIndex + 1) % latestCards.length;
+        }
+      }
+
+      function startSpeech() {
+        if (!canSpeak || speechPlaying) {
+          return;
+        }
+
+        if (currentDeck !== "english") {
+          setDeck("english");
+        }
+
+        if (!getVisibleCards().length) {
+          return;
+        }
+
+        speechPlaying = true;
+        speechRunId += 1;
+        window.speechSynthesis.cancel();
+        updateSpeechButton();
+        playSpeechLoop(speechRunId);
+      }
+
+      function stopSpeech() {
+        if (!speechPlaying) {
+          return;
+        }
+
+        speechPlaying = false;
+        speechRunId += 1;
+        window.speechSynthesis.cancel();
+        updateSpeechButton();
+      }
+
+      function toggleSpeech() {
+        if (speechPlaying) {
+          stopSpeech();
+        } else {
+          startSpeech();
+        }
+      }
+
       function nextCard() {
+        if (speechPlaying) {
+          stopSpeech();
+        }
+
         const visibleCards = getVisibleCards();
         if (!visibleCards.length) {
           return;
@@ -770,6 +889,10 @@
       }
 
       function prevCard() {
+        if (speechPlaying) {
+          stopSpeech();
+        }
+
         const visibleCards = getVisibleCards();
         if (!visibleCards.length) {
           return;
@@ -779,6 +902,10 @@
       }
 
       function setFilter(mode) {
+        if (speechPlaying) {
+          stopSpeech();
+        }
+
         currentMode = mode;
         filterTabs.forEach((tab) => {
           tab.classList.toggle("active", tab.dataset.mode === mode);
@@ -787,6 +914,10 @@
       }
 
       function setDeck(deck) {
+        if (speechPlaying) {
+          stopSpeech();
+        }
+
         currentDeck = deck;
         deckTabs.forEach((tab) => {
           tab.classList.toggle("active", tab.dataset.deck === deck);
@@ -795,6 +926,10 @@
       }
 
       function toggleLikeCurrentCard() {
+        if (speechPlaying) {
+          stopSpeech();
+        }
+
         const visibleCards = getVisibleCards();
         if (!visibleCards.length) {
           return;
@@ -837,6 +972,7 @@
 
       prevBtn.addEventListener("click", prevCard);
       nextBtn.addEventListener("click", nextCard);
+      speechToggle.addEventListener("click", toggleSpeech);
       likeToggle.addEventListener("click", (e) => {
         e.stopPropagation();
         toggleLikeCurrentCard();
@@ -874,6 +1010,10 @@
       });
 
       loadProgressMemo();
+      if (!canSpeak) {
+        speechToggle.textContent = "読み上げ非対応";
+        speechToggle.disabled = true;
+      }
       renderCard(currentIndex);
     </script>
   </div>
