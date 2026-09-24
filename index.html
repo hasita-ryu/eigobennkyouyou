@@ -883,7 +883,7 @@
           const card = visibleCards[currentIndex];
 
           if (!(await speakText(card.q, "en-US", runId))) return;
-          if (!(await delay(450, runId))) return;
+          if (!(await delay(750, runId))) return;
           setFlipped(true);
           if (!(await delay(250, runId))) return;
           if (!(await speakText(card.a, "ja-JP", runId))) return;
