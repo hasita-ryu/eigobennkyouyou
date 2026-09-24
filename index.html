@@ -677,6 +677,8 @@
       const canSpeak = "speechSynthesis" in window && "SpeechSynthesisUtterance" in window;
       let speechPlaying = false;
       let speechRunId = 0;
+      let englishVoice = null;
+      let japaneseVoice = null;
 
       const progressInputs = {
         history: progressHistory,
@@ -791,6 +793,61 @@
         });
       }
 
+      function chooseVoice(voices, langPrefix, preferredNames) {
+        const matchingVoices = voices.filter((voice) => voice.lang.toLowerCase().startsWith(langPrefix));
+        if (!matchingVoices.length) {
+          return null;
+        }
+
+        return preferredNames
+          .map((name) => matchingVoices.find((voice) => voice.name.toLowerCase().includes(name)))
+          .find(Boolean) || matchingVoices[0];
+      }
+
+      function refreshSpeechVoices() {
+        if (!canSpeak) {
+          return;
+        }
+
+        const voices = window.speechSynthesis.getVoices();
+        englishVoice = chooseVoice(voices, "en", [
+          "samantha",
+          "alex",
+          "daniel",
+          "google us english",
+          "google uk english",
+          "microsoft",
+        ]);
+        japaneseVoice = chooseVoice(voices, "ja", [
+          "kyoko",
+          "otoya",
+          "google 日本語",
+          "microsoft nanami",
+          "microsoft haruka",
+        ]);
+      }
+
+      function waitForSpeechVoices() {
+        return new Promise((resolve) => {
+          refreshSpeechVoices();
+          if (englishVoice || window.speechSynthesis.getVoices().length) {
+            resolve();
+            return;
+          }
+
+          const timeoutId = window.setTimeout(() => {
+            refreshSpeechVoices();
+            resolve();
+          }, 1200);
+
+          window.speechSynthesis.onvoiceschanged = () => {
+            window.clearTimeout(timeoutId);
+            refreshSpeechVoices();
+            resolve();
+          };
+        });
+      }
+
       function speakText(text, lang, runId) {
         return new Promise((resolve) => {
           if (!speechPlaying || runId !== speechRunId || !text) {
@@ -800,6 +857,11 @@
 
           const utterance = new SpeechSynthesisUtterance(text);
           utterance.lang = lang;
+          if (lang.startsWith("en") && englishVoice) {
+            utterance.voice = englishVoice;
+          } else if (lang.startsWith("ja") && japaneseVoice) {
+            utterance.voice = japaneseVoice;
+          }
           utterance.rate = lang === "en-US" ? 0.82 : 0.92;
           utterance.pitch = 1;
           utterance.onend = () => resolve(speechPlaying && runId === speechRunId);
@@ -836,7 +898,7 @@
         }
       }
 
-      function startSpeech() {
+      async function startSpeech() {
         if (!canSpeak || speechPlaying) {
           return;
         }
@@ -853,6 +915,7 @@
         speechRunId += 1;
         window.speechSynthesis.cancel();
         updateSpeechButton();
+        await waitForSpeechVoices();
         playSpeechLoop(speechRunId);
       }
 
@@ -1013,6 +1076,9 @@
       if (!canSpeak) {
         speechToggle.textContent = "読み上げ非対応";
         speechToggle.disabled = true;
+      } else {
+        refreshSpeechVoices();
+        window.speechSynthesis.onvoiceschanged = refreshSpeechVoices;
       }
       renderCard(currentIndex);
     </script>
