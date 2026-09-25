@@ -47,14 +47,16 @@
     }
 
     .filter-tabs,
-    .deck-switch {
+    .deck-switch,
+    .direction-switch {
       display: flex;
       gap: 8px;
       flex-wrap: wrap;
     }
 
     .filter-tab,
-    .deck-tab {
+    .deck-tab,
+    .direction-tab {
       border: 1px solid #cbd5e1;
       background: #f8fafc;
       color: #334155;
@@ -66,7 +68,8 @@
     }
 
     .filter-tab.active,
-    .deck-tab.active {
+    .deck-tab.active,
+    .direction-tab.active {
       background: #2563eb;
       color: #ffffff;
       border-color: #2563eb;
@@ -323,6 +326,10 @@
         <div class="filter-tabs" role="tablist" aria-label="カードの表示切替">
           <button class="filter-tab active" data-mode="all" id="filter-all">全部</button>
           <button class="filter-tab" data-mode="liked" id="filter-liked">いいねしたやつ</button>
+        </div>
+        <div class="direction-switch" role="tablist" aria-label="英語カードの出題方向">
+          <button class="direction-tab active" data-direction="en-ja" type="button">英語 → 日本語</button>
+          <button class="direction-tab" data-direction="ja-en" type="button">日本語 → 英語</button>
         </div>
         <div class="progress-memo" aria-label="進捗メモ">
           <label class="progress-item" for="progress-history">
@@ -656,6 +663,7 @@
       let flipped = false;
       let currentMode = "all";
       let currentDeck = "history";
+      let englishDirection = "en-ja";
       const likedIndexes = {
         history: new Set(),
         english: new Set()
@@ -671,6 +679,7 @@
       const likeToggle = document.getElementById("like-toggle");
       const filterTabs = document.querySelectorAll(".filter-tab");
       const deckTabs = document.querySelectorAll(".deck-tab");
+      const directionTabs = document.querySelectorAll(".direction-tab");
       const appTitle = document.getElementById("app-title");
       const progressHistory = document.getElementById("progress-history");
       const progressEnglish = document.getElementById("progress-english");
@@ -691,6 +700,17 @@
           if (saved !== null) {
             input.value = saved;
           }
+        });
+      }
+
+      function loadEnglishDirection() {
+        const saved = localStorage.getItem("flashcard-english-direction");
+        if (saved === "en-ja" || saved === "ja-en") {
+          englishDirection = saved;
+        }
+
+        directionTabs.forEach((tab) => {
+          tab.classList.toggle("active", tab.dataset.direction === englishDirection);
         });
       }
 
@@ -724,6 +744,20 @@
           return deckCards.filter((card, index) => likedIndexes[currentDeck].has(index));
         }
         return deckCards;
+      }
+
+      function getCardSides(card) {
+        if (currentDeck === "english" && englishDirection === "ja-en") {
+          return {
+            question: card.a,
+            answer: card.q,
+          };
+        }
+
+        return {
+          question: card.q,
+          answer: card.a,
+        };
       }
 
       function updateLikeButton() {
@@ -763,8 +797,9 @@
 
         currentIndex = Math.min(index, visibleCards.length - 1);
         const card = visibleCards[currentIndex];
-        questionText.textContent = card.q;
-        answerText.textContent = card.a;
+        const sides = getCardSides(card);
+        questionText.textContent = sides.question;
+        answerText.textContent = sides.answer;
         statCount.textContent = `${currentIndex + 1} / ${visibleCards.length}`;
         appTitle.textContent = currentDeck === "history" ? "歴史カード" : "英語カード";
         updateLikeButton();
@@ -988,6 +1023,19 @@
         renderCard(0);
       }
 
+      function setEnglishDirection(direction) {
+        if (speechPlaying) {
+          stopSpeech();
+        }
+
+        englishDirection = direction;
+        localStorage.setItem("flashcard-english-direction", direction);
+        directionTabs.forEach((tab) => {
+          tab.classList.toggle("active", tab.dataset.direction === direction);
+        });
+        renderCard(currentIndex);
+      }
+
       function toggleLikeCurrentCard() {
         if (speechPlaying) {
           stopSpeech();
@@ -1049,6 +1097,10 @@
         tab.addEventListener("click", () => setDeck(tab.dataset.deck));
       });
 
+      directionTabs.forEach((tab) => {
+        tab.addEventListener("click", () => setEnglishDirection(tab.dataset.direction));
+      });
+
       Object.entries(progressInputs).forEach(([deck, input]) => {
         input.addEventListener("input", () => saveProgressMemo(deck));
         input.addEventListener("change", () => saveProgressMemo(deck));
@@ -1073,6 +1125,7 @@
       });
 
       loadProgressMemo();
+      loadEnglishDirection();
       if (!canSpeak) {
         speechToggle.textContent = "読み上げ非対応";
         speechToggle.disabled = true;
