@@ -322,6 +322,7 @@
         <div class="deck-switch" role="tablist" aria-label="デッキ切替">
           <button class="deck-tab active" data-deck="history" id="deck-history">歴史</button>
           <button class="deck-tab" data-deck="english" id="deck-english">英語</button>
+          <button class="deck-tab" data-deck="secondSemester" id="deck-second-semester">2nd Semester</button>
         </div>
         <div class="filter-tabs" role="tablist" aria-label="カードの表示切替">
           <button class="filter-tab active" data-mode="all" id="filter-all">全部</button>
@@ -341,6 +342,11 @@
             <span>英語</span>
             <input class="progress-input" id="progress-english" type="number" min="0" max="144" inputmode="numeric" placeholder="0" aria-label="英語の進捗番号" />
             <span class="progress-total">/ 144</span>
+          </label>
+          <label class="progress-item" for="progress-second-semester">
+            <span>2nd</span>
+            <input class="progress-input" id="progress-second-semester" type="number" min="0" max="33" inputmode="numeric" placeholder="0" aria-label="2nd Semesterの進捗番号" />
+            <span class="progress-total">/ 33</span>
           </label>
         </div>
         <div>
@@ -656,6 +662,41 @@
           { q: "as little as ~", a: "～ほど少ない、たった～" },
           { q: "penny", a: "1ペニー硬貨；わずかなお金" },
           { q: "peer", a: "同年代の人、仲間" },
+        ],
+        secondSemester: [
+          { q: "matter", a: "重要である、問題である" },
+          { q: "judge", a: "判断する、（良し悪しを）評価する" },
+          { q: "respectful", a: "敬意を示す、礼儀正しい" },
+          { q: "educate", a: "教育する、教える" },
+          { q: "inspire", a: "刺激を与える、奮い立たせる" },
+          { q: "bright", a: "明るい、あざやかな" },
+          { q: "light", a: "薄い、淡い、明るい色の" },
+          { q: "danger", a: "危険" },
+          { q: "emergency", a: "緊急事態" },
+          { q: "represent", a: "代表する、表す" },
+          { q: "vehicle", a: "乗り物、車両" },
+          { q: "colorblind", a: "色覚異常の、色の区別が難しい" },
+          { q: "trust", a: "信頼する" },
+          { q: "visible", a: "目にみえる、見てわかる" },
+          { q: "warn", a: "警告する、注意する" },
+          { q: "dye", a: "染料" },
+          { q: "chemical", a: "化学物質" },
+          { q: "lead", a: "鉛" },
+          { q: "arsenic", a: "ヒ素" },
+          { q: "paint", a: "塗料、ペンキ" },
+          { q: "make O (feel) sick", a: "Oの気分を悪くさせる" },
+          { q: "take a look at ~", a: "～を見てみる" },
+          { q: "ingredient", a: "材料、成分" },
+          { q: "medicine", a: "薬" },
+          { q: "suffer from ~", a: "～に苦しむ" },
+          { q: "depression", a: "鬱状態" },
+          { q: "cough", a: "せきをする" },
+          { q: "including", a: "～を含めて" },
+          { q: "insect", a: "昆虫" },
+          { q: "ceramic", a: "陶磁器" },
+          { q: "cause", a: "引き起こす" },
+          { q: "crack", a: "ひび、割れ目" },
+          { q: "chip", a: "欠け、かけら" },
         ]
       };
 
@@ -666,7 +707,8 @@
       let englishDirection = "en-ja";
       const likedIndexes = {
         history: new Set(),
-        english: new Set()
+        english: new Set(),
+        secondSemester: new Set()
       };
 
       const flashcard = document.getElementById("flashcard");
@@ -683,6 +725,7 @@
       const appTitle = document.getElementById("app-title");
       const progressHistory = document.getElementById("progress-history");
       const progressEnglish = document.getElementById("progress-english");
+      const progressSecondSemester = document.getElementById("progress-second-semester");
       const canSpeak = "speechSynthesis" in window && "SpeechSynthesisUtterance" in window;
       let speechPlaying = false;
       let speechRunId = 0;
@@ -691,7 +734,8 @@
 
       const progressInputs = {
         history: progressHistory,
-        english: progressEnglish
+        english: progressEnglish,
+        secondSemester: progressSecondSemester
       };
 
       function loadProgressMemo() {
@@ -746,8 +790,18 @@
         return deckCards;
       }
 
+      function isEnglishDeck(deck = currentDeck) {
+        return deck === "english" || deck === "secondSemester";
+      }
+
+      function getDeckTitle(deck = currentDeck) {
+        if (deck === "history") return "歴史カード";
+        if (deck === "secondSemester") return "2nd Semester";
+        return "英語カード";
+      }
+
       function getCardSides(card) {
-        if (currentDeck === "english" && englishDirection === "ja-en") {
+        if (isEnglishDeck() && englishDirection === "ja-en") {
           return {
             question: card.a,
             answer: card.q,
@@ -801,7 +855,7 @@
         questionText.textContent = sides.question;
         answerText.textContent = sides.answer;
         statCount.textContent = `${currentIndex + 1} / ${visibleCards.length}`;
-        appTitle.textContent = currentDeck === "history" ? "歴史カード" : "英語カード";
+        appTitle.textContent = getDeckTitle();
         updateLikeButton();
 
         requestAnimationFrame(() => {
@@ -938,7 +992,7 @@
           return;
         }
 
-        if (currentDeck !== "english") {
+        if (!isEnglishDeck()) {
           setDeck("english");
         }
 
@@ -1121,6 +1175,8 @@
           setDeck("history");
         } else if (e.key === "2") {
           setDeck("english");
+        } else if (e.key === "3") {
+          setDeck("secondSemester");
         }
       });
 
