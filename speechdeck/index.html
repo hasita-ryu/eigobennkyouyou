@@ -45,6 +45,35 @@
       .audio-top{flex-wrap:wrap}.audio-en{font-size:19px}
     }
     @media(max-width:600px){.shortcut{display:none}.audio-visual{min-height:280px}}
+
+    /* Japanese / English full-topic study cards. Both sides scroll independently. */
+    .translation-mode{display:none}
+    .translation-card{height:min(650px,73vh);min-height:470px;touch-action:pan-y}
+    .translation-face{display:flex;flex-direction:column;align-items:stretch;text-align:left;overflow:hidden}
+    .translation-front{background:linear-gradient(140deg,#fff 0%,#f8f7ff 100%)}
+    .translation-back{transform:rotateY(180deg);background:#fff}
+    .translation-top{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:15px 21px;border-bottom:1px solid var(--border);background:#f9f8ff}
+    .translation-top b{color:var(--purple);font-size:11px;letter-spacing:.08em}
+    .translation-top span{color:#8f94ac;font-size:11px}
+    .translation-scroll{min-height:0;flex:1;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;padding:20px 24px 27px;line-height:1.8;user-select:text}
+    .translation-question{padding:15px 17px;background:#f4f2ff;border:1px solid #e5e0ff;border-radius:13px;margin-bottom:18px}
+    .translation-question small{display:block;color:var(--purple);font-weight:850;font-size:10px;letter-spacing:.1em;margin-bottom:7px}
+    .translation-question p{margin:0;font-size:clamp(14px,1.6vw,17px);font-weight:750;line-height:1.75;overflow-wrap:anywhere}
+    .translation-group{margin:0 0 17px}
+    .translation-part{font-size:10px;letter-spacing:.12em;color:var(--purple);font-weight:850;margin:0 0 8px}
+    .translation-line{font-size:14px;line-height:1.85;margin:0 0 7px;padding:0 3px;overflow-wrap:anywhere}
+    .translation-controls{display:flex;justify-content:center;align-items:center;gap:13px;margin-top:20px}
+    .translation-tip{font-size:11px;color:var(--secondary);text-align:center;line-height:1.8;margin:14px 0 0}
+    @media(max-width:600px){
+      .translation-card{height:min(620px,68vh);min-height:440px}
+      .translation-top{padding:12px 13px}
+      .translation-top span{font-size:10px}
+      .translation-scroll{padding:15px 14px 22px}
+      .translation-question{padding:12px 13px}
+      .translation-line{font-size:13px}
+      .translation-controls{gap:10px}
+      .translation-tip{text-align:left}
+    }
   </style>
 </head>
 <body>
@@ -52,7 +81,7 @@
   <header class="topbar">
     <a href="#" class="brand" aria-label="Speechdeck ホーム"><span class="brand-mark">↗</span><span class="brand-word">speech<span>deck.</span></span></a>
     <div class="top-right"><a class="source-link" id="sheetLink" href="https://docs.google.com/spreadsheets/d/1EfihharfEFTw5fzceVulAWA1KIkwr2ax6flZAoz68Ok/edit" target="_blank" rel="noopener" title="元のスプレッドシートを開く"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 3h7v7M10 14 21 3"/><path d="M21 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h6"/></svg>原稿シート</a></div>
-    <nav class="tabs" aria-label="学習モード"><button class="active" data-mode="cards" aria-pressed="true">▣ <span>暗記カード</span></button><button data-mode="audio" aria-pressed="false">◖)) <span>音声ループ</span></button></nav>
+    <nav class="tabs" aria-label="学習モード"><button class="active" data-mode="cards" aria-pressed="true">▣ <span>暗記カード</span></button><button data-mode="translate" aria-pressed="false">⇆ <span>日英カード</span></button><button data-mode="audio" aria-pressed="false">◖)) <span>音声ループ</span></button></nav>
   </header>
   <section class="intro"><div><div class="overline">YOUR SPEAKING PRACTICE</div><h1 id="pageHeading">覚えるまで、何度でも。</h1><p id="pageDescription">質問を見て答えを思い出し、カードを裏返して確認しよう。</p></div><div class="statbox"><small>原稿の完成状況</small><strong><span id="doneCount">10</span><em> / 10</em></strong><div class="bar"><div id="doneBar"></div></div></div></section>
   <div class="layout">
@@ -66,6 +95,32 @@
         <div class="footer-actions"><button class="btn btn-ghost btn-sm" id="againBtn">↺ もう一度</button><div class="nav"><button class="icon-btn" id="prevBtn" aria-label="前のカード">←</button><button class="btn btn-primary" id="flipBtn">答えを表示 ↻</button><button class="icon-btn" id="nextBtn" aria-label="次のカード">→</button></div><button class="btn btn-success btn-sm" id="knownBtn">✓ 覚えた</button></div>
         <div class="shortcut">← → でカード移動　·　スペースキーで表裏切り替え　·　スマホはスワイプにも対応</div>
       </section>
+
+      <section id="translationMode" class="panel-card translation-mode" aria-label="日本語と英語の暗記カード">
+        <div class="control-row">
+          <div class="eyebrow">JAPANESE ⇄ ENGLISH <span class="counter" id="translationCounter">01 <em>/ 10</em></span></div>
+          <button class="icon-btn" id="translationShuffleBtn" type="button" title="カードの順番をシャッフル" aria-label="カードの順番をシャッフル">⇄</button>
+        </div>
+        <div id="translationCard" class="flashcard translation-card" role="button" tabindex="0" aria-label="日本語を表示中。タップすると英語へ切り替え" aria-pressed="false">
+          <div class="inner">
+            <div class="face translation-face translation-front">
+              <div class="translation-top"><b>日本語 · JAPANESE</b><span>タップで英語を確認 ↻</span></div>
+              <div class="translation-scroll" id="translationJa"></div>
+            </div>
+            <div class="face translation-face translation-back">
+              <div class="translation-top"><b>英語 · ENGLISH</b><span>タップで日本語に戻る ↻</span></div>
+              <div class="translation-scroll" id="translationEn"></div>
+            </div>
+          </div>
+        </div>
+        <div class="dots" id="translationDots" aria-label="カードの位置"></div>
+        <div class="translation-controls">
+          <button class="icon-btn" id="translationPrev" type="button" aria-label="前のトピック">←</button>
+          <button class="btn btn-primary" id="translationFlip" type="button">英語で答え合わせ ↻</button>
+          <button class="icon-btn" id="translationNext" type="button" aria-label="次のトピック">→</button>
+        </div>
+        <p class="translation-tip">質問とOREO全文を日本語で確認し、英語を思い出してから裏返そう。カード内は上下にスクロールできます。</p>
+      </section>
       <section id="audioMode" class="panel-card audio-container" aria-label="音声学習">
         <div class="audio-top"><div><div class="eyebrow">AUDIO LOOP <span class="counter" id="audioCounter">01 <em>/ 10</em></span></div><div class="audio-topic" id="audioTitle">What do you do when you are stressed?</div><div class="audio-translation" id="audioTitleJa">あなたはストレスを感じたとき、何をしますか。</div></div><span class="playing-pill" id="audioBadge">再生待ち</span></div>
         <div class="audio-visual" id="audioVisual"><div class="big-sound" aria-hidden="true">♫</div><div class="wave" id="wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="audio-now" id="audioStep">再生ボタンを押してスタート</div><div class="audio-ja" id="currentJa">日本語から読み上げます</div><div class="audio-en" id="currentEn">Listen, then speak.</div></div>
@@ -74,9 +129,9 @@
         <div class="settings"><span class="setting" title="日本語の読み上げ後、英文の前に毎回2秒の無音を入れます">日本語 → 英語 <strong>2秒（固定）</strong></span><label class="setting">英語の速度 <select id="rateSelect"><option value="0.55">0.55 × （もっとゆっくり）</option><option value="0.65" selected>0.65 × （ゆっくり・推奨）</option><option value="0.75">0.75 × （少し速め）</option><option value="0.9">0.90 ×</option><option value="1">1.00 × （通常）</option></select></label><label class="setting">文章間の無音 <select id="gapSelect"><option value="2">2 秒</option><option value="3" selected>3 秒</option><option value="5">5 秒</option><option value="7">7 秒</option></select></label><label class="setting">繰り返し <select id="loopSelect"><option value="all" selected>全トピック</option><option value="one">このトピックだけ</option></select></label></div>
         <div id="audioError" class="audio-error" role="alert"></div>
       </section>
-      <p class="bottom-msg">学習データ：スプレッドシートから取り込んだ完成済みの <strong>4トピック</strong>。この試作版では、シートの変更は自動同期されません。</p>
+      <p class="bottom-msg">学習データ：スプレッドシートから取り込んだ完成済みの <strong>10トピック</strong>。この試作版では、シートの変更は自動同期されません。</p>
     </main>
-    <aside class="aside"><div class="aside-title"><span>トピック一覧</span><small>10 TOPICS</small></div><div class="topic-list" id="topicList"></div><p class="aside-note"><strong>学習の進め方</strong><br>暗記カードでは、まず質問を読んで口で答えてみよう。分からなければ裏返して原稿を確認。音声モードでは、日本語 → 2秒 → ゆっくり英語 → 3秒の順に進むよ。</p></aside>
+    <aside class="aside"><div class="aside-title"><span>トピック一覧</span><small>10 TOPICS</small></div><div class="topic-list" id="topicList"></div><p class="aside-note"><strong>学習の進め方</strong><br>暗記カードでは質問から英語を思い出そう。日英カードでは質問と原稿の日本語全文を見て、裏返して英語で答え合わせ。音声モードでは、日本語 → 2秒 → ゆっくり英語 → 3秒の順に進むよ。</p></aside>
   </div>
 </div>
 <script id="embedded-topics" type="application/json">[{"id":1,"en":"What do you do when you are stressed?","ja":"あなたはストレスを感じたとき、何をしますか。","title":"ストレスへの対処","lines":[{"part":"O","en":"When I feel stressed, I watch anime.","ja":"私はストレスを感じたとき、アニメを見ます。"},{"part":"R","en":"I have two reasons.","ja":"理由は2つあります。"},{"part":"R","en":"First, I can enjoy anime by just watching it.","ja":"1つ目は、ただ見ているだけでアニメを楽しめることです。"},{"part":"R","en":"I don't have to do anything.","ja":"何かをする必要はありません。"},{"part":"R","en":"So I can enjoy anime even when I am tired.","ja":"だから、疲れているときでもアニメを楽しめます。"},{"part":"R","en":"Second, anime makes me feel happy.","ja":"2つ目は、アニメを見ると楽しい気分になれることです。"},{"part":"R","en":"I don't choose a special anime when I feel stressed.","ja":"ストレスを感じたときに見るアニメを特に決めているわけではありません。"},{"part":"R","en":"These days, I am watching Dr. STONE.","ja":"最近は『Dr.STONE』を見ています。"},{"part":"E","en":"For example, on the first day of Marugoto Festival, I was very busy.","ja":"例えば、まるごと祭の1日目、私はとても忙しかったです。"},{"part":"E","en":"I prepared for the festival and worked my shift.","ja":"私は祭りの準備やシフトの仕事をしました。"},{"part":"E","en":"I was busy all day, and I was very tired.","ja":"一日中忙しく、とても疲れていました。"},{"part":"E","en":"After I got home, I thought about going to bed.","ja":"家に帰ったあと、寝ようと思いました。"},{"part":"E","en":"But I didn't want to just sleep and end my day.","ja":"でも、ただ寝て一日を終えたくありませんでした。"},{"part":"E","en":"So I decided to watch anime.","ja":"だから、アニメを見ることにしました。"},{"part":"E","en":"I could enjoy it even though I was tired.","ja":"疲れていてもアニメを楽しめました。"},{"part":"E","en":"I had a good time without doing anything difficult.","ja":"難しいことを何もせずに、楽しい時間を過ごせました。"},{"part":"O","en":"When I feel stressed, I watch anime.","ja":"私はストレスを感じたとき、アニメを見ます。"}]},{"id":2,"en":"What is a small dream you have?","ja":"あなたが持っている小さな夢は何ですか。","title":"小さな夢","lines":[{"part":"O","en":"My small dream is to have a cat.","ja":"私の小さな夢は、猫を飼うことです。"},{"part":"R","en":"I have two reasons.","ja":"理由は2つあります。"},{"part":"R","en":"First, cats are small and fluffy.","ja":"1つ目は、猫は小さくてふわふわしていることです。"},{"part":"R","en":"I think they are very cute.","ja":"私は猫がとてもかわいいと思います。"},{"part":"R","en":"Second, I have wanted a cat for a long time.","ja":"2つ目は、昔からずっと猫を飼いたいと思っていたことです。"},{"part":"E","en":"I have wanted to have a cat since I was little.","ja":"私は小さい頃から猫を飼いたいと思っていました。"},{"part":"E","en":"But I have a cat allergy.","ja":"でも、私は猫アレルギーがあります。"},{"part":"E","en":"So my family did not let me have a cat at home.","ja":"だから、家族は家で猫を飼うことを許してくれませんでした。"},{"part":"E","en":"Because of that, I have never had a cat.","ja":"そのため、私は今まで猫を飼ったことがありません。"},{"part":"E","en":"If I can have a cat in the future, I want a cat with white and gray fur.","ja":"もし将来、猫を飼えるようになったら、白と灰色の毛の猫を飼いたいです。"},{"part":"E","en":"I want to play with my cat.","ja":"私は自分の猫と一緒に遊びたいです。"},{"part":"E","en":"I also want to have a good time with my cat.","ja":"そして、猫と楽しい時間を過ごしたいです。"},{"part":"O","en":"My small dream is to have a cat.","ja":"私の小さな夢は、猫を飼うことです。"}]},{"id":3,"en":"Tell a story about something positive or negative that happened in Marugoto Festival.","ja":"まるごとフェスティバルで起こった、良いことまたは悪いことについて話してください。","title":"まるごと祭の出来事","lines":[{"part":"O","en":"One good thing at Marugoto Festival was that we finished setting up our lab.","ja":"まるごと祭で良かったことは、ラボを無事に完成させられたことです。"},{"part":"R","en":"We worked on our lab for six months.","ja":"私たちは半年間、ラボの準備をしてきました。"},{"part":"R","en":"So I was happy when we finally finished it.","ja":"だから、ようやく完成したときはうれしかったです。"},{"part":"R","en":"The work was very hard, so I felt relieved.","ja":"準備はとても大変だったので、安心しました。"},{"part":"E","en":"We started preparing our lab about six months before Marugoto Festival.","ja":"私たちは、まるごと祭の約半年前からラボの準備を始めました。"},{"part":"E","en":"First, we thought about the idea for our lab.","ja":"最初に、ラボのコンセプトを考えました。"},{"part":"E","en":"Then, we made decorations and prepared the displays.","ja":"そのあと、装飾を作ったり、展示の準備をしたりしました。"},{"part":"E","en":"Everything was very hard.","ja":"すべてがとても大変でした。"},{"part":"E","en":"Even when the festival was close, we were not ready yet.","ja":"まるごと祭が近づいても、まだ準備は終わっていませんでした。"},{"part":"E","en":"We worked until the morning of the festival.","ja":"私たちは祭り当日の朝まで準備をしました。"},{"part":"E","en":"But we finished everything in time.","ja":"でも、なんとかすべての準備を間に合わせることができました。"},{"part":"E","en":"When our lab was ready, I felt very relieved.","ja":"ラボが完成したとき、とても安心しました。"},{"part":"O","en":"One good thing at Marugoto Festival was that we finished setting up our lab.","ja":"まるごと祭で良かったことは、ラボを無事に完成させられたことです。"}]},{"id":4,"en":"What are you proud of?","ja":"あなたが誇りに思っていることは何ですか。","title":"誇りに思うこと","lines":[{"part":"O","en":"I am proud that I can play new sports pretty well.","ja":"私が誇りに思っていることは、初めてのスポーツでもある程度できることです。"},{"part":"R","en":"Because I can enjoy new sports from the start.","ja":"なぜなら、初めてのスポーツでも、最初から楽しめるからです。"},{"part":"E","en":"I have played many sports since I was little.","ja":"私は小さい頃から、さまざまなスポーツを経験してきました。"},{"part":"E","en":"I started swimming when I was three years old.","ja":"私は3歳から水泳を習い始めました。"},{"part":"E","en":"When I was in elementary school, I learned soccer.","ja":"小学生のときはサッカーを習っていました。"},{"part":"E","en":"I also played badminton with my friends.","ja":"また、友達とバドミントンをしていました。"},{"part":"E","en":"I played basketball with my older brother, too.","ja":"兄とバスケットボールもしていました。"},{"part":"E","en":"In junior high school, I joined the table tennis club.","ja":"中学生になると、卓球部に入りました。"},{"part":"E","en":"Each sport uses my body in a different way.","ja":"これらのスポーツでは、それぞれ違う体の動かし方をします。"},{"part":"E","en":"So I learned many ways to move my body.","ja":"そのため、さまざまな体の動かし方が自然と身につきました。"},{"part":"E","en":"Because of this, I can learn new sports pretty quickly.","ja":"その経験があるので、初めてのスポーツでも比較的すぐにコツをつかむことができます。"},{"part":"O","en":"I am proud that I can play new sports pretty well.","ja":"私が誇りに思っていることは、初めてのスポーツでもある程度できることです。"}]},{"id":5,"en":"What is a happy memory you have this year?","ja":"今年のうれしい思い出は何ですか。","title":"今年の思い出","lines":[{"part":"O","en":"A happy memory I have this year is joining the Marugoto Festival organizing team.","ja":"今年のうれしい思い出は、まるごと祭の実行委員になったことです。"},{"part":"R","en":"Because I had many different experiences.","ja":"なぜなら、さまざまな経験ができたからです。"},{"part":"E","en":"Marugoto Festival has an activity called Lab.","ja":"まるごと祭には、ラボというコンテンツがあります。"},{"part":"E","en":"Lab's concept was \"未日常\".","ja":"ラボのコンセプトは「未日常」でした。"},{"part":"E","en":"I came up with this word.","ja":"この言葉は私が考えました。"},{"part":"E","en":"I used my ideas and other members' ideas to make it.","ja":"自分と他の実行委員の思いを使って、この言葉を作りました。"},{"part":"E","en":"I made a word that was easy to remember.","ja":"私は覚えやすい言葉を作ることができました。"},{"part":"E","en":"It was a very good experience for me.","ja":"それは私にとって、とても良い経験でした。"},{"part":"E","en":"But I also learned that making a concept is not enough.","ja":"しかし、コンセプトは作るだけでは十分ではないことも学びました。"},{"part":"E","en":"Everyone needs to understand its meaning.","ja":"みんながその意味を理解する必要があります。"},{"part":"E","en":"If not, people may understand it in different ways.","ja":"そうしないと、人によって違う解釈をしてしまう可能性があります。"},{"part":"E","en":"Then the original meaning may be lost.","ja":"そうすると、本来の意味が失われてしまう可能性があります。"},{"part":"O","en":"A happy memory I have this year is joining the Marugoto Festival organizing team.","ja":"今年のうれしい思い出は、まるごと祭の実行委員になったことです。"}]},{"id":6,"en":"Talk about your first day at KMC","ja":"KMCでの最初の日について話してください。","title":"KMC初日","lines":[{"part":"O","en":"On my first day at KMC, I looked back on my life.","ja":"KMCの初日は、これまでの自分の人生を振り返っていました。"},{"part":"R","en":"Because I had to give a speech about my goals.","ja":"なぜなら、初志表明をするためです。"},{"part":"E","en":"For this speech, I looked back on my life.","ja":"初志表明では、これまでの自分を振り返りました。"},{"part":"E","en":"I thought about why I came to this school.","ja":"なぜこの学校に来たのかを考えました。"},{"part":"E","en":"I also thought about what I wanted to do in the future.","ja":"そして、将来何をしたいのかも考えました。"},{"part":"E","en":"I thought about how people get chances to learn new things.","ja":"私は、人が新しいことを知るきっかけについて考えました。"},{"part":"E","en":"For example, I started learning programming because I got a flyer in elementary school.","ja":"例えば、私がプログラミングを学び始めたのは、小学生のときにチラシをもらったからです。"},{"part":"E","en":"I came to this school because I remembered seeing it before.","ja":"また、この学校に来たのは、昔この学校を見たことを覚えていたからです。"},{"part":"E","en":"So I think chances to learn new things are important.","ja":"だから、新しいことを知るきっかけは大切だと思います。"},{"part":"E","en":"But these chances depend on our environment.","ja":"しかし、そのきっかけは自分のいる環境に左右されます。"},{"part":"E","en":"I thought that was a shame.","ja":"私は、それがもったいないと思いました。"},{"part":"E","en":"So I imagined a future where everyone has chances to learn new things.","ja":"だから、誰もが新しいことを知るきっかけを得られる未来を想像しました。"},{"part":"E","en":"I talked about this idea in my speech.","ja":"そして、その考えを初志表明で話しました。"},{"part":"O","en":"On my first day at KMC, I looked back on my life.","ja":"KMCの初日は、これまでの自分の人生を振り返っていました。"}]},{"id":7,"en":"What is your life plan?","ja":"あなたの人生計画は何ですか。","title":"人生計画","lines":[{"part":"O","en":"I don't have a life plan yet.","ja":"僕のライフプランはまだありません。"},{"part":"R","en":"Because what I want to do changes quickly.","ja":"なぜなら、やりたいことがすぐに変わるからです。"},{"part":"E","en":"For example, when I started at this school, I wanted to learn programming.","ja":"例えば、入学したときはプログラミングを学びたいと思っていました。"},{"part":"E","en":"But soon, I became really interested in woodworking and resin crafts.","ja":"しかし、すぐに木工やレジン制作にはまりました。"},{"part":"E","en":"Now I want to do programming again.","ja":"今はまたプログラミングをしたいと思っています。"},{"part":"E","en":"I also want to organize an event.","ja":"それと同時に、イベントも開催したいと思っています。"},{"part":"E","en":"I also want to do something related to animals.","ja":"さらに、生き物に関係することも何かしたいと思っています。"},{"part":"E","en":"I am especially interested in snakes.","ja":"特に、ヘビに関することに興味があります。"},{"part":"E","en":"For example, I want to make food for snakes.","ja":"例えば、ヘビの餌を開発してみたいです。"},{"part":"E","en":"I also want to make something that attracts wild snakes.","ja":"また、野生のヘビが寄ってくるようなものも作ってみたいです。"},{"part":"E","en":"So, I have many things I want to do.","ja":"このように、僕にはやりたいことがたくさんあります。"},{"part":"E","en":"That's why I haven't decided on a life plan, and I don't want to decide on one.","ja":"だから、今はライフプランを決めていませんし、決めようとも思っていません。"},{"part":"O","en":"I don't have a life plan yet.","ja":"僕のライフプランはまだありません。"}]},{"id":8,"en":"What is more important? Trying many things or choosing one thing you are good at?","ja":"たくさんのことに挑戦することと、自分が得意な一つのことを選ぶことでは、どちらが大切だと思いますか。","title":"挑戦と専門性","lines":[{"part":"O","en":"I think both are important.","ja":"私はどちらも大切だと思います。"},{"part":"R","en":"Because it depends on the situation.","ja":"なぜなら、状況によるからです。"},{"part":"E","en":"For example, trying many things is important to find what you are good at.","ja":"例えば、自分の得意なことを見つけるためには、たくさんのことに挑戦することが大切です。"},{"part":"E","en":"Having many experiences can show who you are.","ja":"さまざまな経験をすることが、自分らしさにつながることもあります。"},{"part":"E","en":"Focusing on one thing can also show who you are.","ja":"一つのことを深く追求することも、自分らしさにつながることがあります。"},{"part":"E","en":"I like trying many things.","ja":"僕自身は、たくさんのことに挑戦するのが好きです。"},{"part":"E","en":"For example, I took soccer, swimming, and table tennis lessons.","ja":"例えば、サッカー、水泳、卓球を習っていました。"},{"part":"E","en":"I also often played basketball, badminton, and volleyball with my friends.","ja":"バスケットボールやバドミントン、バレーボールも友達と頻繁にしていました。"},{"part":"E","en":"By trying many things, I can find what I like and what I am good at.","ja":"いろいろなことに挑戦することで、自分の好きなことや得意なことを見つけられます。"},{"part":"E","en":"So trying many things is better for me now.","ja":"だから、今の僕にはたくさんのことに挑戦する方が合っています。"},{"part":"E","en":"But some people may like focusing on one thing.","ja":"でも、一つのことを深く追求する方が合っている人もいると思います。"},{"part":"O","en":"I think both are important.","ja":"私はどちらも大切だと思います。"}]},{"id":9,"en":"What is something you want to do by the end of this year?","ja":"今年が終わるまでにやりたいことは何ですか。","title":"年内にしたいこと","lines":[{"part":"O","en":"Something I want to do by the end of this year is to study English and design.","ja":"今年が終わるまでにやっておきたいことは、英語とデザインの勉強です。"},{"part":"R","en":"Because I need both for what I want to do.","ja":"なぜなら、どちらも自分のやりたいことに必要だからです。"},{"part":"E","en":"First, I want to study English because I want to go abroad.","ja":"まず、英語を勉強したい理由は、海外に行きたいからです。"},{"part":"E","en":"When I go abroad, I want to talk freely with local people.","ja":"海外に行ったとき、現地の人と自由に話せるようになりたいです。"},{"part":"E","en":"Second, I want to study design to share information about myself and my projects.","ja":"次に、デザインを勉強したい理由は、自分の情報やプロジェクトを発信するためです。"},{"part":"E","en":"I also don't want schoolwork to get in the way of my own projects.","ja":"また、学校の勉強が自分のプロジェクトの妨げにならないようにしたいとも思っています。"},{"part":"E","en":"So I want to study English and design this year.","ja":"だから、今年中に英語とデザインの勉強を進めておきたいです。"},{"part":"O","en":"Something I want to do by the end of this year is to study English and design.","ja":"今年が終わるまでにやっておきたいことは、英語とデザインの勉強です。"}]},{"id":10,"en":"What kind of child were you when you were young?","ja":"あなたは子どもの頃、どんな子どもでしたか。","title":"子どもの頃","lines":[{"part":"O","en":"When I was young, I loved catching bugs.","ja":"私は子どもの頃、虫取りが好きな子どもでした。"},{"part":"R","en":"Because I enjoyed finding and catching different living things.","ja":"なぜなら、いろいろな生き物を見つけたり、捕まえたりするのが楽しかったからです。"},{"part":"E","en":"For example, I often went to the park with my friends to catch bugs.","ja":"例えば、子どもの頃はよく友達と公園で虫取りをしていました。"},{"part":"E","en":"We caught cicadas, butterflies, and frogs.","ja":"セミやチョウ、カエルなどを捕まえていました。"},{"part":"E","en":"I also found butterfly eggs at school.","ja":"また、学校でチョウの卵を見つけたこともありました。"},{"part":"E","en":"I took them home and waited for them to hatch.","ja":"それを家に持ち帰り、卵から生まれるのを待ちました。"},{"part":"E","en":"For a school project, I also did an experiment about frog colors.","ja":"自由研究では、カエルの色に関する実験もしていました。"},{"part":"E","en":"Even now, I still love living things, and sometimes I catch them and watch them.","ja":"今でも生き物が好きで、見つけると捕まえて観察することがあります。"},{"part":"O","en":"When I was young, I loved catching bugs.","ja":"私は子どもの頃、虫取りが好きな子どもでした。"}]}]</script>
@@ -87,23 +142,86 @@
  const el=(tag,cls,text)=>{const o=document.createElement(tag);if(cls)o.className=cls;if(text!==undefined)o.textContent=text;return o};
  const store={get(key,fallback){try{const v=localStorage.getItem(key);return v===null?fallback:JSON.parse(v)}catch(_){return fallback}},set(key,val){try{localStorage.setItem(key,JSON.stringify(val))}catch(_){}}};
  let mode='cards',deck=[...completed.map((_,i)=>i)],cardIndex=0,flipped=false;
+ let translationDeck=[...completed.map((_,i)=>i)],translationIndex=0,translationFlipped=false;
  let known=new Set(store.get('speechdeck-known-v1',[]).filter(n=>n>=1&&n<=10));
  let audioTopic=0,playerToken=0,playerPlaying=false,playerPaused=false,phase='idle',lineNo=0,loopRunning=false;
  const synthSupported=typeof window.speechSynthesis!=='undefined'&&typeof SpeechSynthesisUtterance!=='undefined';
  const speech=synthSupported?window.speechSynthesis:null;
  function updateStats(){$('doneCount').textContent=completed.length;$('doneBar').style.width=(completed.length/TOPICS.length*100)+'%'}
  function currentCard(){return completed[deck[cardIndex]]}
- function setMode(next){if(next===mode)return;if(mode==='audio')stopAudio();mode=next;document.querySelectorAll('[data-mode]').forEach(b=>{let active=b.dataset.mode===next;b.classList.toggle('active',active);b.setAttribute('aria-pressed',String(active))});$('cardMode').style.display=next==='cards'?'block':'none';$('audioMode').style.display=next==='audio'?'block':'none';$('pageHeading').textContent=next==='cards'?'覚えるまで、何度でも。':'聞いて、声に出して、覚える。';$('pageDescription').textContent=next==='cards'?'質問を見て答えを思い出し、カードを裏返して確認しよう。':'日本語で内容を理解してから、ゆっくりした英語を繰り返し聞こう。';renderTopicList();if(next==='audio')renderAudio()}
- function renderTopicList(){const node=$('topicList');node.replaceChildren();TOPICS.forEach((t,i)=>{const ready=t.lines.length>0;const active=ready&&(mode==='cards'?currentCard()?.id===t.id:audioTopic===i);const btn=el('button','topic-row'+(active?' current':''));btn.type='button';btn.disabled=!ready;btn.title=ready?'このトピックへ':'まだ原稿がありません';const n=el('span','topic-num',String(t.id).padStart(2,'0'));const d=el('span','topic-data');d.append(el('span','topic-title',t.title),el('span','topic-meta',ready?'原稿完成 · '+t.lines.length+'文':'原稿作成中'));const mark=el('span','tiny-icon',!ready?'🔒':known.has(t.id)?'✓':'›');btn.append(n,d,mark);if(ready)btn.addEventListener('click',()=>{if(mode==='cards'){cardIndex=deck.indexOf(completed.findIndex(x=>x.id===t.id));flipped=false;renderCard()}else{audioTopic=i;if(playerPlaying)startAudio();else renderAudio()} });node.append(btn)})}
+ function setMode(next){if(next===mode)return;if(mode==='audio')stopAudio();mode=next;document.querySelectorAll('[data-mode]').forEach(b=>{const active=b.dataset.mode===next;b.classList.toggle('active',active);b.setAttribute('aria-pressed',String(active))});$('cardMode').style.display=next==='cards'?'block':'none';$('translationMode').style.display=next==='translate'?'block':'none';$('audioMode').style.display=next==='audio'?'block':'none';const titles={cards:['覚えるまで、何度でも。','質問を見て答えを思い出し、カードを裏返して確認しよう。'],translate:['日本語から英語へ。','質問とOREO全文を日本語で読み、英語で言えるか裏返して確認しよう。'],audio:['聞いて、声に出して、覚える。','日本語で内容を理解してから、ゆっくりした英語を繰り返し聞こう。']};$('pageHeading').textContent=titles[next][0];$('pageDescription').textContent=titles[next][1];renderTopicList();if(next==='audio')renderAudio();if(next==='translate')renderTranslation()}
+ function renderTopicList(){const node=$('topicList');node.replaceChildren();TOPICS.forEach((t,i)=>{const ready=t.lines.length>0;const active=ready&&(mode==='cards'?currentCard()?.id===t.id:mode==='translate'?currentTranslation()?.id===t.id:audioTopic===i);const btn=el('button','topic-row'+(active?' current':''));btn.type='button';btn.disabled=!ready;btn.title=ready?'このトピックへ':'まだ原稿がありません';const n=el('span','topic-num',String(t.id).padStart(2,'0'));const d=el('span','topic-data');d.append(el('span','topic-title',t.title),el('span','topic-meta',ready?'原稿完成 · '+t.lines.length+'文':'原稿作成中'));const mark=el('span','tiny-icon',!ready?'🔒':known.has(t.id)?'✓':'›');btn.append(n,d,mark);if(ready)btn.addEventListener('click',()=>{if(mode==='cards'){cardIndex=deck.indexOf(completed.findIndex(x=>x.id===t.id));flipped=false;renderCard()}else if(mode==='translate'){translationIndex=translationDeck.indexOf(completed.findIndex(x=>x.id===t.id));translationFlipped=false;renderTranslation()}else{audioTopic=i;if(playerPlaying)startAudio();else renderAudio()}});node.append(btn)})}
  function renderCard(){if(!completed.length)return;const t=currentCard();$('cardCounter').innerHTML=String(cardIndex+1).padStart(2,'0')+' <em>/ '+String(deck.length).padStart(2,'0')+'</em>';$('frontTopic').textContent='TOPIC '+String(t.id).padStart(2,'0');$('frontEn').textContent=t.en;$('frontJa').textContent=t.ja;$('answerCount').textContent=t.lines.length+' SENTENCES';$('flashcard').classList.toggle('flipped',flipped);$('flashcard').setAttribute('aria-pressed',String(flipped));$('flashcard').setAttribute('aria-label',flipped?'カードをタップして質問に戻す':'タップして答えを表示');$('flipBtn').textContent=flipped?'質問に戻る ↻':'答えを表示 ↻';const area=$('transcript');area.replaceChildren();let prev='';let group;for(const s of t.lines){if(s.part!==prev){group=el('section','line-group');group.append(el('h3','part-label',s.part==='O'?'O · OPINION':s.part==='R'?'R · REASON':'E · EXAMPLE'));area.append(group);prev=s.part}const row=el('div','sentence');row.append(el('p','sentence-en',s.en),el('p','sentence-ja',s.ja));group.append(row)}area.scrollTop=0;const dots=$('dots');dots.replaceChildren();deck.forEach((_,i)=>{const d=el('span','dot'+(i===cardIndex?' active':''));dots.append(d)});$('shuffleBtn').classList.toggle('selected',deck.some((x,i)=>x!==i));$('knownBtn').textContent=known.has(t.id)?'✓ 覚えた':'✓ 覚えた';renderTopicList()}
+
+ function currentTranslation(){return completed[translationDeck[translationIndex]]}
+ function makeTranslationContent(container,topic,language){
+  container.replaceChildren();
+  const question=el('section','translation-question');
+  question.append(el('small',null,language==='ja'?'Q · 質問':'Q · QUESTION'),el('p',null,topic[language]));
+  container.append(question);
+  let group=null,prev='';
+  topic.lines.forEach((line,index)=>{
+   if(!group||line.part!==prev){
+    group=el('section','translation-group');
+    const lastO=line.part==='O'&&index===topic.lines.length-1;
+    const jaLabels={O:lastO?'O · 結論':'O · 意見',R:'R · 理由',E:'E · 具体例'};
+    const enLabels={O:lastO?'O · CONCLUSION':'O · OPINION',R:'R · REASON',E:'E · EXAMPLE'};
+    group.append(el('h3','translation-part',(language==='ja'?jaLabels:enLabels)[line.part]));
+    container.append(group);prev=line.part;
+   }
+   group.append(el('p','translation-line',line[language]));
+  });
+ }
+ function renderTranslation(){
+  if(!completed.length)return;
+  const topic=currentTranslation();
+  $('translationCounter').innerHTML=String(translationIndex+1).padStart(2,'0')+' <em>/ '+String(translationDeck.length).padStart(2,'0')+'</em>';
+  makeTranslationContent($('translationJa'),topic,'ja');
+  makeTranslationContent($('translationEn'),topic,'en');
+  $('translationJa').scrollTop=0;$('translationEn').scrollTop=0;
+  $('translationCard').classList.toggle('flipped',translationFlipped);
+  $('translationCard').setAttribute('aria-pressed',String(translationFlipped));
+  $('translationCard').setAttribute('aria-label',translationFlipped?'英語を表示中。タップすると日本語に戻る':'日本語を表示中。タップすると英語で答え合わせ');
+  $('translationFlip').textContent=translationFlipped?'日本語に戻る ↻':'英語で答え合わせ ↻';
+  const dots=$('translationDots');dots.replaceChildren();
+  translationDeck.forEach((_,i)=>dots.append(el('span','dot'+(i===translationIndex?' active':''))));
+  $('translationShuffleBtn').classList.toggle('selected',translationDeck.some((x,i)=>x!==i));
+  renderTopicList();
+ }
+ function setTranslationFlipped(next){
+  translationFlipped=next;$('translationCard').classList.toggle('flipped',next);
+  $('translationCard').setAttribute('aria-pressed',String(next));
+  $('translationCard').setAttribute('aria-label',next?'英語を表示中。タップすると日本語に戻る':'日本語を表示中。タップすると英語で答え合わせ');
+  $('translationFlip').textContent=next?'日本語に戻る ↻':'英語で答え合わせ ↻';
+ }
+ function moveTranslation(dir){translationIndex=(translationIndex+dir+translationDeck.length)%translationDeck.length;translationFlipped=false;renderTranslation()}
+ function shuffleTranslation(){
+  const current=translationDeck[translationIndex];let seq=[...translationDeck];
+  if(seq.some((x,i)=>x!==i))seq=[...completed.map((_,i)=>i)];
+  else{for(let i=seq.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[seq[i],seq[j]]=[seq[j],seq[i]]}if(seq.every((x,i)=>x===i)&&seq.length>1)[seq[0],seq[1]]=[seq[1],seq[0]]}
+  translationDeck=seq;translationIndex=translationDeck.indexOf(current);translationFlipped=false;renderTranslation();
+ }
  function setFlipped(next){flipped=next;renderCard()}
  function moveCard(dir){cardIndex=(cardIndex+dir+deck.length)%deck.length;flipped=false;renderCard()}
  function markKnown(value){const id=currentCard().id;if(value)known.add(id);else known.delete(id);store.set('speechdeck-known-v1',[...known]);moveCard(1)}
  function shuffleDeck(){const cur=deck[cardIndex];let seq=[...deck];if(deck.every((x,i)=>x!==i)){seq=[...completed.map((_,i)=>i)]}else{for(let i=seq.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[seq[i],seq[j]]=[seq[j],seq[i]]}if(seq.every((x,i)=>x===i)&&seq.length>1){[seq[0],seq[1]]=[seq[1],seq[0]]}}deck=seq;cardIndex=deck.indexOf(cur);flipped=false;renderCard()}
  $('flashcard').addEventListener('click',()=>setFlipped(!flipped));$('flipBtn').addEventListener('click',()=>setFlipped(!flipped));$('prevBtn').addEventListener('click',()=>moveCard(-1));$('nextBtn').addEventListener('click',()=>moveCard(1));$('knownBtn').addEventListener('click',()=>markKnown(true));$('againBtn').addEventListener('click',()=>markKnown(false));$('shuffleBtn').addEventListener('click',shuffleDeck);$('resetMarksBtn').addEventListener('click',()=>{if(confirm('「覚えた」の記録をリセットしますか？')){known.clear();store.set('speechdeck-known-v1',[]);renderCard()}});
+
+ $('translationCard').addEventListener('click',()=>setTranslationFlipped(!translationFlipped));
+ $('translationCard').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();setTranslationFlipped(!translationFlipped)}});
+ $('translationFlip').addEventListener('click',()=>setTranslationFlipped(!translationFlipped));
+ $('translationPrev').addEventListener('click',()=>moveTranslation(-1));
+ $('translationNext').addEventListener('click',()=>moveTranslation(1));
+ $('translationShuffleBtn').addEventListener('click',shuffleTranslation);
  document.querySelectorAll('[data-mode]').forEach(btn=>btn.addEventListener('click',()=>setMode(btn.dataset.mode)));
- document.addEventListener('keydown',e=>{if(mode!=='cards'||['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName))return;if(e.key==='ArrowLeft'){e.preventDefault();moveCard(-1)}if(e.key==='ArrowRight'){e.preventDefault();moveCard(1)}if(e.code==='Space'){e.preventDefault();setFlipped(!flipped)}});
+ document.addEventListener('keydown',e=>{if(!['cards','translate'].includes(mode)||['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName))return;if(e.key==='ArrowLeft'){e.preventDefault();if(mode==='cards')moveCard(-1);else moveTranslation(-1)}if(e.key==='ArrowRight'){e.preventDefault();if(mode==='cards')moveCard(1);else moveTranslation(1)}if(e.code==='Space'){e.preventDefault();if(mode==='cards')setFlipped(!flipped);else setTranslationFlipped(!translationFlipped)}});
  let touchX=0,touchY=0,ignoreClick=false;const fc=$('flashcard');fc.addEventListener('touchstart',e=>{touchX=e.changedTouches[0].screenX;touchY=e.changedTouches[0].screenY},{passive:true});fc.addEventListener('touchend',e=>{const dx=e.changedTouches[0].screenX-touchX,dy=e.changedTouches[0].screenY-touchY;if(Math.abs(dx)>70&&Math.abs(dx)>Math.abs(dy)*1.5){e.preventDefault();ignoreClick=true;moveCard(dx<0?1:-1);setTimeout(()=>ignoreClick=false,130)}},{passive:false});fc.addEventListener('click',e=>{if(ignoreClick){e.stopImmediatePropagation();ignoreClick=false}},true);
+
+ let transTouchX=0,transTouchY=0,transIgnoreClick=false;
+ const tc=$('translationCard');
+ tc.addEventListener('touchstart',e=>{transTouchX=e.changedTouches[0].screenX;transTouchY=e.changedTouches[0].screenY},{passive:true});
+ tc.addEventListener('touchend',e=>{const dx=e.changedTouches[0].screenX-transTouchX,dy=e.changedTouches[0].screenY-transTouchY;if(Math.abs(dx)>70&&Math.abs(dx)>Math.abs(dy)*1.5){e.preventDefault();transIgnoreClick=true;moveTranslation(dx<0?1:-1);setTimeout(()=>transIgnoreClick=false,130)}},{passive:false});
+ tc.addEventListener('click',e=>{if(transIgnoreClick){e.stopImmediatePropagation();transIgnoreClick=false}},true);
  function audioIndex(){return completed.findIndex(t=>t.id===TOPICS[audioTopic].id)}
  function audioTopicData(){return TOPICS[audioTopic]}
  function setAudioBadge(text,active=false){$('audioBadge').textContent=text;$('audioBadge').classList.toggle('live',active)}
@@ -142,7 +260,7 @@
  $('audioPlay').addEventListener('click',toggleAudio);$('audioStop').addEventListener('click',stopAudio);$('audioPrev').addEventListener('click',()=>skipAudio(-1));$('audioNext').addEventListener('click',()=>skipAudio(1));$('loopSelect').addEventListener('change',()=>renderAudio());
  window.addEventListener('beforeunload',()=>{if(synthSupported)speech.cancel()});document.addEventListener('visibilitychange',()=>{ /* バックグラウンドではブラウザ側の音声制限に従う */ });
  if(!synthSupported){$('audioError').textContent='この環境では読み上げ機能を使えません。ブラウザで開いてください。'}
- updateStats();renderCard();renderAudio();setPlayButton();
+ updateStats();renderCard();renderTranslation();renderAudio();setPlayButton();
 })();
 </script>
 </body>
